@@ -78,6 +78,9 @@ const map = new maplibregl.Map({
   zoom: 9 // starting zoom
 });
 
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.ScaleControl() );
+
 map.on('load', () => {
   setOverlayStyles();
 });
