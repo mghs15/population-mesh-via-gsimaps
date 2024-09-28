@@ -40,10 +40,9 @@ body { margin:0; padding:0;}
   position: relative;
   z-index: 999999;
   width: 300px;
-  color: #FFFFFF;
-  border: solid 4px #AAAAAA;
+  border: solid 4px #111;
   border-radius: 4px;
-  background: #111111;
+  background: #FFF;
   padding: 1em;
   margin: 2em;
   text-align: center;
@@ -72,7 +71,7 @@ maplibregl.addProtocol("pmtiles", protocol.tile);
 const map = new maplibregl.Map({
   container: 'map',
   hash: true,
-  style: 'https://mghs15.github.io/styling-tools-for-gsi-optbv/dark.json', 
+  style: 'https://mghs15.github.io/styling-tools-for-gsi-optbv/mono.json', 
   center: [135, 35], // starting position [lng, lat]
   minZoom: 0,
   zoom: 9 // starting zoom
@@ -220,11 +219,11 @@ const setOverlayStyles = () => {
         ["linear"],
         ["/", ["get", dType2], 2000],
         0,
-        "rgb(255,255,255)",
+        "rgb(100,100,100)",
         0.01,
-        "rgba(255,255,255,0.5)",
+        "rgba(100,100,100,0.5)",
         1,
-        "rgba(255,255,255,0)"
+        "rgba(100,100,100,0)"
       ],
     }
   });
@@ -246,6 +245,27 @@ const setOverlayStyles = () => {
       "text-padding": 8
     },
     paint: {
+      "text-color": [
+        "interpolate",
+        ["linear"],
+        ["/", ["get", dType2], 2000],
+        0,
+        "rgba(128,0,255,0)",
+        0.01,
+        "rgba(64,98,250)",
+        0.025,
+        "rgba(0,181,235)",
+        0.06,
+        "rgba(64,236,212)",
+        0.125,
+        "rgba(128,255,180)",
+        0.25,
+        "rgb(192,235,141)",
+        0.5,
+        "rgb(255,95,48)",
+        1,
+        "rgb(255,0,0)"
+      ],
       "text-halo-width": 1,
       "text-halo-color": "#FFFFFF"
     }
