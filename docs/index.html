@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<title>人口分布</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+<script src='https://unpkg.com/maplibre-gl@4.1/dist/maplibre-gl.js'></script>
+<link href='https://unpkg.com/maplibre-gl@4.1/dist/maplibre-gl.css' rel='stylesheet' />
+<script src='https://unpkg.com/pmtiles@3.0/dist/pmtiles.js'></script>
+
+<script>
+
+
+</script>
+
+<style>
+body { margin:0; padding:0;}
+
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0px;
+  width: 100%;
+}
+
+#menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,12em);
+  position: relative;
+  z-index: 100000;
+  padding: 5px 20px ;
+  margin: 0 0;
+  box-shadow: 0px 0px 0px 0px #eeeeee;
+  font-family: 'Open Sans', sans-serif;
+}
+
+#alert {
+  position: relative;
+  z-index: 999999;
+  width: 300px;
+  color: #FFFFFF;
+  border: solid 4px #AAAAAA;
+  border-radius: 4px;
+  background: #111111;
+  padding: 1em;
+  margin: 2em;
+  text-align: center;
+}
+
+</style>
+
+</head>
+<body>
+
+<div id="map"></div>
+<div id="alert">
+  <span style="font-weight:bold;">注意事項</span><hr>
+  表示している人口データは、地理院地図で公開されている「令和2年国勢調査に関する地域メッシュ統計（総務省）」を加工したものです。
+  <br>
+  加工の都合上、<strong>タイル境界付近のデータが２重に存在する</strong>ため、その部分のヒートマップは実態よりも濃く表示されますのでご注意ください。
+  <br>
+  ZL10未満は機械的なクラスタリングを行っているため、ヒートマップの位置が多少ずれることがあります。
+  <hr><button onclick="closeAlertWindow();">閉じる</button>
+</div>
+
+<script>
+let protocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
+
+const map = new maplibregl.Map({
+  container: 'map',
+  hash: true,
+  style: 'https://mghs15.github.io/styling-tools-for-gsi-optbv/dark.json', 
+  center: [135, 35], // starting position [lng, lat]
+  minZoom: 0,
+  zoom: 9 // starting zoom
+});
+
+map.on('load', () => {
+  setOverlayStyles();
+});
+
+
+const closeAlertWindow = () => {
+  document.getElementById("alert").style.display = "none";
+}
+
+
+const setOverlayStyles = () => {
+ 
+  //const form = document.layerChoice;
+  //const disasterType = form.hazard.value;
+  
+  if(map.getLayer("overlay-heat")){
+    map.removeLayer("overlay-heat");
+    map.removeLayer("overlay-cluster-count");
+    map.removeLayer("overlay");
+    
+    map.removeSource("overlay");
+  
+  }
+  
+  map.addSource("overlay", {
+    "type": "vector",
+    "tiles":["pmtiles://https://mghs15.github.io/population-mesh-via-gsimaps/population-points.pmtiles/{z}/{x}/{y}"],
+    "attribution":"令和2年国勢調査に関する地域メッシュ統計（総務省）（地理院地図より取得・加工）",
+    "minzoom":6,"maxzoom":10,
+  });
+    
+  // クラスタリングポイント
+  //const dType2 = (disasterType=="全て") ?  "point_count" : disasterType;
+  const dType2 = "population";
+  
+  map.addLayer({
+    "id": "overlay-heat",
+    "type": "heatmap",
+    "source": "overlay",
+    "source-layer": "population",
+    minzoom: 6,
+    maxzoom: 14,
+    "paint": {
+      "heatmap-color": [
+        "interpolate",
+        ["linear"],
+        ["heatmap-density"],
+        0,
+        "rgba(128,0,255,0)",
+        0.01,
+        "rgba(64,98,250)",
+        0.025,
+        "rgba(0,181,235)",
+        0.06,
+        "rgba(64,236,212)",
+        0.125,
+        "rgba(128,255,180)",
+        0.25,
+        "rgb(192,235,141)",
+        0.5,
+        "rgb(255,95,48)",
+        1,
+        "rgb(255,0,0)"
+      ],
+      'heatmap-weight': ['get', dType2],
+      "heatmap-intensity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        6,
+        1 / (2000 * 2000),
+        11,
+        1 / 2000
+      ],
+      "heatmap-opacity": 0.5
+    }
+  });
+
+/*
+  map.addLayer({
+    id: "overlay-cluster-count",
+    type: "symbol",
+    source: "overlay",
+    "source-layer": "population",
+    minzoom: 6,
+    maxzoom: 11,
+    layout: {
+      "text-field": ["get", dType2],
+      "text-font": ["NotoSansJP-Regular"],
+      "text-size": 12,
+      "symbol-sort-key": ["get", dType2],
+      "text-variable-anchor": ["bottom", "top"],
+      "text-radial-offset": 1,
+      "text-padding": 8
+    },
+    paint: {
+      "text-halo-width": 1,
+      "text-halo-color": "#FFFFFF"
+    }
+  });
+*/
+
+  // 単独ポイント  
+  map.addLayer({
+    id: "overlay",
+    type: "circle",
+    source: "overlay",
+    "source-layer": "population",
+    minzoom: 12,
+    maxzoom: 24,
+    paint: {
+      "circle-color":  [
+        "interpolate",
+        ["linear"],
+        ["/", ["get", dType2], 2000],
+        0,
+        "rgba(128,0,255,0)",
+        0.01,
+        "rgba(64,98,250)",
+        0.025,
+        "rgba(0,181,235)",
+        0.06,
+        "rgba(64,236,212)",
+        0.125,
+        "rgba(128,255,180)",
+        0.25,
+        "rgb(192,235,141)",
+        0.5,
+        "rgb(255,95,48)",
+        1,
+        "rgb(255,0,0)"
+      ],
+      "circle-radius": 4,
+      "circle-stroke-width": 1,
+      "circle-stroke-color": [
+        "interpolate",
+        ["linear"],
+        ["/", ["get", dType2], 2000],
+        0,
+        "rgb(255,255,255)",
+        0.01,
+        "rgba(255,255,255,0.5)",
+        1,
+        "rgba(255,255,255,0)"
+      ],
+    }
+  });
+
+  map.addLayer({
+    id: "overlay-text",
+    type: "symbol",
+    source: "overlay",
+    "source-layer": "population",
+    minzoom: 14,
+    maxzoom: 24,
+    layout: {
+      "text-field": ["get", dType2],
+      "text-font": ["NotoSansJP-Regular"],
+      "text-size": 12,
+      "symbol-sort-key": ["get", dType2],
+      "text-variable-anchor": ["bottom", "top"],
+      "text-radial-offset": 1,
+      "text-padding": 8
+    },
+    paint: {
+      "text-halo-width": 1,
+      "text-halo-color": "#FFFFFF"
+    }
+  });
+  
+}
+
+
+map.on('click', (e) => {
+  openPopupFunc(e);
+});
+
+const popup = new maplibregl.Popup({
+  closeOnClick: false,
+});
+
+
+const openPopupFunc = (e) => {
+
+  //初期化
+  popup.remove();
+  
+  //レンダリングされた地物を取得
+  const targetLayers = ["overlay"];
+  const sv = 5;
+  const bb = [
+    [e.point.x - sv, e.point.y - sv],
+    [e.point.x + sv, e.point.y + sv]
+  ];
+  const features = map.queryRenderedFeatures(bb, {layers: targetLayers});
+  
+  if(!features.length) {
+    return;
+  } 
+  
+  //ポップアップ表示処理
+  let htmlString = "";
+  features.forEach( feature => {
+    console.log(feature.properties);
+
+    htmlString += "<div class='popup-content'>";
+    for(name in feature.properties){
+      htmlString += `<div><span>${name}</span>：<span>${feature.properties[name]}</span></div>`
+    }
+    htmlString += "</div>";
+    
+  });
+  
+  if(!htmlString || htmlString == "") {
+    return;
+  }
+  
+  popup.setLngLat([ e.lngLat.lng, e.lngLat.lat ])
+    .setHTML(htmlString)
+    .addTo(map);
+    
+}
+
+
+</script>
+
+</body>
+</html>
